@@ -13,8 +13,8 @@
   },
   "engines": {},
   "dependencies": {
-    "@elements/settings": ">=0.1.0-alpha6 <0.2.0",
-    "@elements/utils": ">=0.1.0-alpha6 <0.2.0",
+    "@elements/settings": ">=0.1.0-alpha7",
+    "@elements/utils": ">=0.1.0-alpha7",
     "pg": ">=7.14.0 <7.15.0"
   },
   "devDependencies": {
