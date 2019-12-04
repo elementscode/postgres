@@ -1,0 +1,24 @@
+{
+  "name": "@elements/database",
+  "description": "The elements database driver for postgres.",
+  "version": "0.1.0-alpha7",
+  "elements": {
+    "paid": true,
+    "platform": "all"
+  },
+  "browser": {
+    "./database": false,
+    "./pool": false,
+    "./shared_pool": false
+  },
+  "engines": {},
+  "dependencies": {
+    "@elements/settings": ">=0.1.0-alpha6 <0.2.0",
+    "@elements/utils": ">=0.1.0-alpha6 <0.2.0",
+    "pg": ">=7.14.0 <7.15.0"
+  },
+  "devDependencies": {
+    "@types/pg": ">=7.11.2 <7.12.0"
+  },
+  "peerDependencies": {}
+}

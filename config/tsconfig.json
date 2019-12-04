@@ -1,0 +1,7 @@
+{
+  "compilerOptions": {
+    "downlevelIteration": true,
+    "allowJs": false,
+    "declaration": true
+  }
+}
