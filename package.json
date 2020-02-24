@@ -1,7 +1,7 @@
 {
   "name": "@elements/database",
   "description": "The elements database driver for postgres.",
-  "version": "0.1.0-alpha7",
+  "version": "0.1.0-alpha9",
   "elements": {
     "paid": true,
     "platform": "all"
@@ -13,8 +13,8 @@
   },
   "engines": {},
   "dependencies": {
-    "@elements/settings": ">=0.1.0-alpha7",
-    "@elements/utils": ">=0.1.0-alpha7",
+    "@elements/settings": ">=0.1.0-alpha9",
+    "@elements/utils": ">=0.1.0-alpha9",
     "pg": ">=7.14.0 <7.15.0"
   },
   "devDependencies": {
