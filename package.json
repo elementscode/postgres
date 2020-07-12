@@ -2,6 +2,7 @@
   "name": "@elements/sql",
   "description": "Work with sql databases in your app.",
   "version": "0.0.0",
+  "license": "SEE LICENSE IN LICENSE.txt",
   "browser": {
     "./database": false,
     "./pool": false,
