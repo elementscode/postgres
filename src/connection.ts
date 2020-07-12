@@ -2,11 +2,11 @@ import * as pg from 'pg';
 import { SqlResult } from './sql_result';
 
 /**
- * The Database class represents a single connection to the database server.
+ * The Connection class represents a single connection to the database server.
  * These connections will be "checked out" of a database pool that contains
  * multiple connections to the database.
  */
-export class Database {
+export class Connection {
   private _client: pg.ClientBase;
 
   public get name(): string {

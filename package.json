@@ -1,11 +1,7 @@
 {
-  "name": "@elements/database",
-  "description": "The elements database driver for postgres.",
-  "version": "0.1.0-alpha10",
-  "elements": {
-    "paid": true,
-    "platform": "all"
-  },
+  "name": "@elements/sql",
+  "description": "Work with sql databases in your app.",
+  "version": "0.0.0",
   "browser": {
     "./database": false,
     "./pool": false,
@@ -13,12 +9,15 @@
   },
   "engines": {},
   "dependencies": {
-    "@elements/settings": ">=0.1.0-alpha9",
-    "@elements/utils": ">=0.1.0-alpha9",
-    "pg": ">=7.14.0 <7.15.0"
+    "pg": ">=8.3.0 <8.4.0"
   },
   "devDependencies": {
-    "@types/pg": ">=7.11.2 <7.12.0"
+    "@types/pg": "^7.14.4"
   },
-  "peerDependencies": {}
+  "peerDependencies": {},
+  "scripts": {
+    "clean": "rm -rf .elements/dist",
+    "copyfiles": "mkdir -p .elements/dist && cp README.md LICENSE.txt package.json .elements/dist",
+    "build": "yarn run clean && yarn run copyfiles && tsc"
+  }
 }

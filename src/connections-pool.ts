@@ -2,9 +2,9 @@ import * as path from 'path';
 import * as pg from 'pg';
 import { Settings } from '@elements/settings';
 import { Config } from './config';
-import { Database } from './database';
+import { Connection } from './connection';
 
-export class Pool {
+export class ConnectionsPool {
   private _pool: pg.Pool;
 
   public constructor() {
@@ -20,7 +20,7 @@ export class Pool {
 
   public async checkout(): Promise<Database> {
     let client = await this._pool.connect();
-    return new Database(client);
+    return new Connection(client);
   }
 
   public async end(): Promise<this> {

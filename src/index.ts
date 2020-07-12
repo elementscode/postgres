@@ -1,4 +1,4 @@
 export * from './sql_result';
-export * from './database';
-export * from './pool';
-export * from './shared_pool';
+export * from './connection';
+export * from './connection-pool';
+export * from './db-connections';
