@@ -1,5 +1,4 @@
-import { getAppSettings } from './utils';
-import { ConnectionsPool } from './connections-pool';
+import { ConnectionPool } from './connection-pool';
 
-const DbConnections = new ConnectionsPool();
+const DbConnections = new ConnectionPool();
 export { DbConnections };
