@@ -11,6 +11,7 @@
   },
   "engines": {},
   "dependencies": {
+    "@elements/json": "0.0.0",
     "pg": ">=8.3.0 <8.4.0"
   },
   "devDependencies": {

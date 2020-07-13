@@ -1,3 +1,6 @@
+import { json } from '@elements/json';
+
+@json
 export class SqlResult<T = any> {
   public rows: T[];
 
