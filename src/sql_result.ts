@@ -1,11 +1,11 @@
 export class SqlResult<T = any> {
-  private _rows: T[];
+  public rows: T[];
 
   /**
    * Returns the number of rows in the sql result.
    */
   public get size(): number {
-    return this._rows.length;
+    return this.rows.length;
   }
 
   /**
@@ -13,9 +13,9 @@ export class SqlResult<T = any> {
    */
   public constructor(rows?: T[]) {
     if (Array.isArray(rows)) {
-      this._rows = rows;
+      this.rows = rows;
     } else {
-      this._rows = [];
+      this.rows = [];
     }
   }
 
@@ -23,14 +23,14 @@ export class SqlResult<T = any> {
    * Returns the first row in the result set.
    */
   public first(): T {
-    return this.size > 0 ? this._rows[0] : undefined;
+    return this.size > 0 ? this.rows[0] : undefined;
   }
 
   /**
    * Returns the last row in the result set.
    */
   public last(): T {
-    return this.size > 0 ? this._rows[this.size - 1] : undefined;
+    return this.size > 0 ? this.rows[this.size - 1] : undefined;
   }
 
   /**
@@ -38,7 +38,7 @@ export class SqlResult<T = any> {
    *
    */
   public map<V = any>(callback: (row: T) => V): SqlResult<V> {
-    return new SqlResult(this._rows.map(callback));
+    return new SqlResult(this.rows.map(callback));
   }
 
   /**
@@ -47,7 +47,7 @@ export class SqlResult<T = any> {
    * set.
    */
   public filter(callback: (row: T) => boolean): SqlResult<T> {
-    return new SqlResult(this._rows.filter(callback));
+    return new SqlResult(this.rows.filter(callback));
   }
 
   /**
@@ -59,7 +59,7 @@ export class SqlResult<T = any> {
    */
   public sum(callback: (row: T) => number): number {
     let total = 0;
-    this._rows.forEach(row => total += callback(row));
+    this.rows.forEach(row => total += callback(row));
     return total;
   }
 
@@ -68,7 +68,7 @@ export class SqlResult<T = any> {
    * result.
    */
   public forEach(callback: (row: T) => void): this {
-    this._rows.forEach(callback);
+    this.rows.forEach(callback);
     return this;
   }
 
@@ -104,14 +104,14 @@ export class SqlResult<T = any> {
    * Returns the SqlResult raw rows.
    */
   public toArray(): T[] {
-    return this._rows;
+    return this.rows;
   }
 
   /**
    * Iterate over the rows.
    */
   public *[Symbol.iterator](): IterableIterator<T> {
-    for (let row of this._rows) {
+    for (let row of this.rows) {
       yield row;
     }
   }

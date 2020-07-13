@@ -1,9 +1,9 @@
 import * as path from 'path';
 import * as pg from 'pg';
 import { Config } from './config';
-import { Connection } from './connection';
+import { DbConnection } from './db-connection';
 
-export class ConnectionPool {
+export class DbConnectionPool {
   private _pool: pg.Pool;
 
   public constructor() {
@@ -17,9 +17,9 @@ export class ConnectionPool {
     this._pool = new pg.Pool(config);
   }
 
-  public async checkout(): Promise<Connection> {
+  public async checkout(): Promise<DbConnection> {
     let client = await this._pool.connect();
-    return new Connection(client);
+    return new DbConnection(client);
   }
 
   public async end(): Promise<this> {

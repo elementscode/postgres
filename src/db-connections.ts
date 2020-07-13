@@ -1,4 +1,4 @@
-import { ConnectionPool } from './connection-pool';
+import { DbConnectionPool } from './db-connection-pool';
 
-const DbConnections = new ConnectionPool();
+const DbConnections = new DbConnectionPool();
 export { DbConnections };

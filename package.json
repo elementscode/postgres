@@ -1,12 +1,13 @@
 {
-  "name": "@elements/sql",
-  "description": "Work with sql databases in your app.",
+  "name": "@elements/postgres",
+  "description": "Work easily with the postgres sql database.",
   "version": "0.0.0",
   "license": "SEE LICENSE IN LICENSE.txt",
   "browser": {
-    "./database": false,
-    "./pool": false,
-    "./shared_pool": false
+    "./connect": false,
+    "./db-connection-pool": false,
+    "./db-connection": false,
+    "./db-connections": false
   },
   "engines": {},
   "dependencies": {

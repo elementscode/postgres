@@ -6,7 +6,7 @@ import { SqlResult } from './sql_result';
  * These connections will be "checked out" of a database pool that contains
  * multiple connections to the database.
  */
-export class Connection {
+export class DbConnection {
   private _client: pg.ClientBase;
 
   public get name(): string {
