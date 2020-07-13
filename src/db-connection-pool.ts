@@ -9,12 +9,19 @@ export class DbConnectionPool {
   public constructor() {
   }
 
-  public connect(config?: Config) {
+  public async connect(config?: Config) {
     if (config && typeof config['name'] === 'string') {
       config.database = config['name'];
     }
 
     this._pool = new pg.Pool(config);
+
+    try {
+      let db = await this.checkout();
+      db.checkin();
+    } catch (err) {
+      throw new Error(`Error connecting to the postgres database: ${err.message}`);
+    }
   }
 
   public async checkout(): Promise<DbConnection> {
