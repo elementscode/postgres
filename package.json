@@ -7,7 +7,8 @@
     "./connect": false,
     "./db-connection-pool": false,
     "./db-connection": false,
-    "./db-connections": false
+    "./db": false,
+    "./types": false
   },
   "engines": {},
   "dependencies": {
