@@ -40,8 +40,8 @@ export class SqlResult<T = any> {
    * Map over the rows to return a new SqlResult containing the mapped values.
    *
    */
-  public map<V = any>(callback: (row: T) => V): SqlResult<V> {
-    return new SqlResult(this.rows.map(callback));
+  public map<V = any>(callback: (row: T) => V): V[] {
+    return this.rows.map(callback);
   }
 
   /**
