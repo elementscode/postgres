@@ -1,5 +1,5 @@
 import * as pg from 'pg';
-import { SqlResult } from './sql_result';
+import { SqlResult } from './sql-result';
 
 /**
  * The Connection class represents a single connection to the database server.
