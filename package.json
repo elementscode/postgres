@@ -10,18 +10,22 @@
     "./db": false,
     "./types": false
   },
+  "bin": {
+    "migrate": "bin/migrate.js"
+  },
   "engines": {},
   "dependencies": {
+    "@elements/config": "0.0.0",
     "@elements/json": "0.0.0",
     "pg": ">=8.3.0 <8.4.0"
   },
   "devDependencies": {
-    "@types/pg": "^7.14.4"
+    "@types/pg": ">=7.14.4 <8.0.0"
   },
-  "peerDependencies": {},
   "scripts": {
     "clean": "rm -rf .elements/dist",
     "copyfiles": "mkdir -p .elements/dist && cp README.md LICENSE.txt package.json .elements/dist",
-    "build": "yarn run clean && yarn run copyfiles && tsc"
+    "build": "yarn run clean && yarn run copyfiles && tsc",
+    "build:watch": "yarn run clean && yarn run copyfiles && tsc --watch"
   }
 }

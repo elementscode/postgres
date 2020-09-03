@@ -1,8 +1,16 @@
 import * as path from 'path';
 import * as pg from 'pg';
+import { findOrCreateAppConfig } from '@elements/config';
 import { DbConfig } from './types';
 import { DbConnection } from './db-connection';
 import { SqlResult } from './sql-result';
+
+export enum DbConnectionPoolState {
+  Idle='Idle',
+  Connecting='Connecting',
+  Connected='Connected',
+  Error='Error',
+}
 
 /**
  * Maintains a pool of database connections for an app. You can checkout a
@@ -13,17 +21,23 @@ import { SqlResult } from './sql-result';
 export class DbConnectionPool {
   private _pool: pg.Pool;
 
-  public async connect(config?: DbConfig) {
-    if (config && typeof config['name'] === 'string') {
-      config.database = config['name'];
-    }
+  private _state: DbConnectionPoolState;
 
+  public constructor(config: DbConfig = findOrCreateAppConfig().get<DbConfig>('db', {})) {
+    this._state = DbConnectionPoolState.Idle;
+    this.connect(config);
+  }
+
+  public async connect(config: DbConfig) {
+    this._state = DbConnectionPoolState.Connecting;
     this._pool = new pg.Pool(config);
 
     try {
       let db = await this.checkout();
       db.checkin();
+      this._state = DbConnectionPoolState.Connected;
     } catch (err) {
+      this._state = DbConnectionPoolState.Error;
       throw new Error(`Error connecting to the postgres database: ${err.message}`);
     }
   }
