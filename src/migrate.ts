@@ -5,6 +5,8 @@ import {
   style,
   FontColor,
   FontStyle,
+  showCursor,
+  hideCursor,
 } from '@elements/term';
 import {
   padZeros,
@@ -145,14 +147,19 @@ async function withDb<T = any>(transaction: boolean, callback: (db: DbConnection
 }
 
 export async function migrateUp(opts: IMigrateOpts = {}): Promise<Job> {
+  let stream = process.stderr;
+
   let job = new Job({
     progress: 'Migrating',
     title: 'Migrate Up',
+    stream: stream,
   });
+
 
   let migrations: Migration[];
 
   try {
+    hideCursor(stream);
     await withDb<void>(!opts.noTransaction, async function(db: DbConnection) {
       let allMigrations = await getAllMigrations(db);
       let nextBatchNumber = await getNextBatch(db);
@@ -194,6 +201,7 @@ export async function migrateUp(opts: IMigrateOpts = {}): Promise<Job> {
   } catch (err) {
     job.addError(err);
   } finally {
+    showCursor(stream);
     job.summary(getJobSummary('up', migrations, job, opts));
   }
 
@@ -201,14 +209,18 @@ export async function migrateUp(opts: IMigrateOpts = {}): Promise<Job> {
 }
 
 export async function migrateDown(opts: IMigrateOpts = {}): Promise<Job> {
+  let stream = process.stderr;
+
   let job = new Job({
     progress: 'Migrating',
     title: 'Migrate Down',
+    stream: stream,
   });
 
   let migrations: Migration[];
 
   try {
+    hideCursor(stream);
     await withDb<void>(!opts.noTransaction, async function(db: DbConnection) {
       let allMigrations = await getAllMigrations(db);
       let lastBatch = await getLastBatch(db);
@@ -238,6 +250,7 @@ export async function migrateDown(opts: IMigrateOpts = {}): Promise<Job> {
   } catch (err) {
     job.addError(err);
   } finally {
+    showCursor(stream);
     job.summary(getJobSummary('down', migrations, job, opts));
   }
 
@@ -245,26 +258,33 @@ export async function migrateDown(opts: IMigrateOpts = {}): Promise<Job> {
 }
 
 export async function migrateStatus(opts: IMigrateStatusOpts = {}): Promise<Job> {
+  let stream = process.stderr;
   let job = new Job({
     progress: 'Computing Status',
     title: 'Migration Status',
+    stream: stream,
   });
 
-  return withDb<Job>(false, async function(db: DbConnection) {
-    let allMigrations = await getAllMigrations(db);
-    let migrations: Migration[];
+  try {
+    hideCursor(stream);
+    return withDb<Job>(false, async function(db: DbConnection) {
+      let allMigrations = await getAllMigrations(db);
+      let migrations: Migration[];
 
-    if (opts.up) {
-      migrations = allMigrations.filter(m => m.upDownState == UpDownState.Up);
-    } else if (opts.down) {
-      migrations = allMigrations.filter(m => m.upDownState == UpDownState.Down);
-    } else {
-      migrations = allMigrations;
-    }
+      if (opts.up) {
+        migrations = allMigrations.filter(m => m.upDownState == UpDownState.Up);
+      } else if (opts.down) {
+        migrations = allMigrations.filter(m => m.upDownState == UpDownState.Down);
+      } else {
+        migrations = allMigrations;
+      }
 
-    job.summary(getUpDownStateTable(migrations));
-    return job.finish();
-  });
+      job.summary(getUpDownStateTable(migrations));
+      return job.finish();
+    });
+  } finally {
+    showCursor(stream);
+  }
 }
 
 /**
