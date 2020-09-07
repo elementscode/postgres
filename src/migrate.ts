@@ -101,12 +101,12 @@ export class Migration {
     this.runAt = '';
   }
 
-  public up(db: DbConnection) {
-    this.api.up(db);
+  public async up(db: DbConnection): Promise<any> {
+    return this.api.up(db);
   }
 
-  public down(db: DbConnection) {
-    this.api.down(db);
+  public async down(db: DbConnection): Promise<any> {
+    return this.api.down(db);
   }
 
   public hasApi(): boolean {
@@ -118,13 +118,11 @@ export class Migration {
   }
 }
 
-
 async function withDb<T = any>(transaction: boolean, callback: (db: DbConnection) => Promise<T>): Promise<T> {
   let db = await DbConnection.create();
+  await ensureMigrationSchemaExists(db);
 
   try {
-    await ensureMigrationSchemaExists(db);
-
     if (transaction) {
       await db.sql('begin');
     }
@@ -154,12 +152,10 @@ export async function migrateUp(opts: IMigrateOpts = {}): Promise<Job> {
     title: 'Migrate Up',
     stream: stream,
   });
+  hideCursor(stream);
 
-
-  let migrations: Migration[];
-
+  let migrations: Migration[] = [];
   try {
-    hideCursor(stream);
     await withDb<void>(!opts.noTransaction, async function(db: DbConnection) {
       let allMigrations = await getAllMigrations(db);
       let nextBatchNumber = await getNextBatch(db);
@@ -198,13 +194,17 @@ export async function migrateUp(opts: IMigrateOpts = {}): Promise<Job> {
         migration.runState = RunState.Completed;
       }
     });
+    job.summary(getJobSummary('up', migrations, job, opts));
   } catch (err) {
     job.addError(err);
-  } finally {
-    showCursor(stream);
-    job.summary(getJobSummary('up', migrations, job, opts));
+    if (err instanceof MigrationError) {
+      job.summary(getJobSummary('up', migrations, job, opts));
+    } else {
+      job.summary(getErrSummary(err));
+    }
   }
 
+  showCursor(stream);
   return job.finish();
 }
 
@@ -216,11 +216,11 @@ export async function migrateDown(opts: IMigrateOpts = {}): Promise<Job> {
     title: 'Migrate Down',
     stream: stream,
   });
+  hideCursor(stream);
 
-  let migrations: Migration[];
+  let migrations: Migration[] = [];
 
   try {
-    hideCursor(stream);
     await withDb<void>(!opts.noTransaction, async function(db: DbConnection) {
       let allMigrations = await getAllMigrations(db);
       let lastBatch = await getLastBatch(db);
@@ -247,27 +247,32 @@ export async function migrateDown(opts: IMigrateOpts = {}): Promise<Job> {
         migration.runAt = '';
       }
     });
+    job.summary(getJobSummary('down', migrations, job, opts));
   } catch (err) {
     job.addError(err);
-  } finally {
-    showCursor(stream);
-    job.summary(getJobSummary('down', migrations, job, opts));
+    if (err instanceof MigrationError) {
+      job.summary(getJobSummary('down', migrations, job, opts));
+    } else {
+      job.summary(getErrSummary(err));
+    }
   }
 
+  showCursor(stream);
   return job.finish();
 }
 
 export async function migrateStatus(opts: IMigrateStatusOpts = {}): Promise<Job> {
   let stream = process.stderr;
+
   let job = new Job({
     progress: 'Computing Status',
     title: 'Migration Status',
     stream: stream,
   });
+  hideCursor(stream);
 
   try {
-    hideCursor(stream);
-    return withDb<Job>(false, async function(db: DbConnection) {
+    await withDb<void>(false, async function(db: DbConnection) {
       let allMigrations = await getAllMigrations(db);
       let migrations: Migration[];
 
@@ -280,11 +285,14 @@ export async function migrateStatus(opts: IMigrateStatusOpts = {}): Promise<Job>
       }
 
       job.summary(getUpDownStateTable(migrations));
-      return job.finish();
     });
-  } finally {
-    showCursor(stream);
+  } catch (err) {
+    job.addError(err);
+    job.summary(getErrSummary(err));
   }
+
+  showCursor(stream);
+  return job.finish();
 }
 
 /**
@@ -398,10 +406,10 @@ function getJobSummary(direction: string, migrations: Migration[], job: Job, opt
     result = getRunStateTable(migrations) + '\n';
     if (job.hasErrors()) {
       let errMigration = job.getErrors()[0];
-      if (opts.noTransaction !== true) {
-        result += style('One of the migrations failed and all migrations in the transaction were rolled back.', FontColor.Gray) + '\n\n';
+      if (opts.noTransaction) {
+        result += style(`This migration failed:\n${errMigration.migration.name} ${errMigration.migration.description}.`, FontColor.Gray) + '\n\n';
       } else {
-        result += style('One of the migrations failed.', FontColor.Gray) + '\n\n';
+        result += style(`All migrations in the transaction were rolled back.\n\nThis migration failed:\n${errMigration.migration.name} ${errMigration.migration.description}.`, FontColor.Gray) + '\n\n';
       }
 
       result += errMigration.message + '\n';
@@ -465,4 +473,8 @@ function getRunStateTable(migrations: Migration[]): string {
   }
 
   return table(rows);
+}
+
+function getErrSummary(err: any): string {
+  return String(err) + '\n';
 }
