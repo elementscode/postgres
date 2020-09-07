@@ -1,4 +1,7 @@
 import { json } from '@elements/json';
+import { NotAuthorizedError, NotFoundError } from '@elements/error';
+
+type ErrorConstructor = new (...args: any[]) => any;
 
 @json
 export class SqlResult<T = any> {
@@ -27,6 +30,35 @@ export class SqlResult<T = any> {
    */
   public first(): T {
     return this.size > 0 ? this.rows[0] : undefined;
+  }
+
+  /**
+   * Returns the first record in the result set and throws a NotAuthorized error
+   * if the record does not exist.
+   */
+  public firstOrThrowNotAuthorized(msg: string = ''): T {
+    return this.firstOrThrow(NotAuthorizedError, msg);
+  }
+
+  /**
+   * Returns the first record in the result set and throws a NotFoundError if
+   * the record does not exist.
+   */
+  public firstOrThrowNotFound(msg: string = ''): T {
+    return this.firstOrThrow(NotFoundError, msg);
+  }
+
+  /**
+   * Returns the first record in the result set and throws the specified error
+   * if the first row does not exist.
+   */
+  public firstOrThrow(errorClass: ErrorConstructor = Error, msg: string = 'Not found.'): T {
+    let result = this.first();
+    if (typeof result === 'undefined') {
+      let err = new errorClass(msg);
+      throw err;
+    }
+    return result;
   }
 
   /**

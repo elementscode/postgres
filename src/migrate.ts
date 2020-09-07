@@ -1,31 +1,102 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import {
+  table,
+  style,
+  FontColor,
+  FontStyle,
+} from '@elements/term';
+import {
+  padZeros,
+  pluralize,
+  getDateString,
+  indent,
+} from '@elements/utils'
+import { StandardError } from '@elements/error';
+import { Job } from '@elements/job';
 import { DbConnection } from './db-connection';
 
-const reMigrationFileName = /(\d{4}-\d{2}-\d{2}-\d{9})\.js$/
+// note: the group is around the 2020-09-05 date, excluding the timestamp
+// portion, so we can easily extract the 'created' field of the migration. The
+// 'name' field of the migration will be the basename without the file
+// extension.
+const reMigrationFileName = /(\d{4}-\d{2}-\d{2})-\d{9}\.js$/
+
+export class MigrationError extends StandardError {
+  migration: Migration;
+  constructor(migration: Migration, message: string) {
+    super(message);
+    this.migration = migration;
+  }
+}
+
+export interface IMigrateOpts {
+  noTransaction?: boolean;
+}
+
+export interface IMigrateStatusOpts {
+  up?: boolean;
+  down?: boolean;
+}
 
 export interface IMigrationApi {
   up(db: DbConnection): void;
   down(db: DbConnection): void;
 }
 
-export enum MigrationState {
+export enum UpDownState {
+  Up='Up',
+  Down='Down',
+}
+
+function getColorForUpDownState(state: UpDownState) {
+  switch (state) {
+    case UpDownState.Up:
+      return FontColor.Green;
+    case UpDownState.Down:
+      return FontColor.Yellow;
+    default:
+      throw new Error('Unknown state: ' + state);
+  }
+}
+
+export enum RunState {
   Pending='Pending',
   Completed='Completed',
+  Error='Error',
+}
+
+function getColorForRunState(state: RunState) {
+  switch (state) {
+    case RunState.Pending:
+      return FontColor.Yellow;
+    case RunState.Completed:
+      return FontColor.Green;
+    case RunState.Error:
+      return FontColor.Red;
+    default:
+      throw new Error('Unknown state: ' + state);
+  }
 }
 
 export class Migration {
-  state: MigrationState;
+  upDownState: UpDownState;
+  runState: RunState;
   name: string;
   description: string;
+  createdAt: string;
+  runAt: string;
   batch: number;
   api: IMigrationApi;
 
   public constructor(description: string, api?: IMigrationApi) {
     this.name = '';
     this.description = description;
-    this.state = MigrationState.Pending;
+    this.upDownState = UpDownState.Down;
+    this.runState = RunState.Pending;
     this.api = api;
+    this.createdAt = '';
+    this.runAt = '';
   }
 
   public up(db: DbConnection) {
@@ -36,122 +107,240 @@ export class Migration {
     this.api.down(db);
   }
 
+  public hasApi(): boolean {
+    return !!this.api;
+  }
+
   public static create(desc: string, api: IMigrationApi): Migration {
     return new Migration(desc, api);
   }
 }
 
-export async function migrateUp() {
+
+async function withDb<T = any>(transaction: boolean, callback: (db: DbConnection) => Promise<T>): Promise<T> {
   let db = await DbConnection.create();
-  await db.sql(`begin`);
 
   try {
     await ensureMigrationSchemaExists(db);
-    let nextBatchNumber = await getNextBatchNumber(db);
-    let migrations = await getPendingMigrations(db);
-    for (let idx = 0; idx < migrations.length; idx++) {
-      let migration = migrations[idx];
-      migration.up(db);
-      await db.sql(`insert into elements.migrations (name, description, batch) values ($1, $2, $3)`, [migration.name, migration.description, nextBatchNumber]);
+
+    if (transaction) {
+      await db.sql('begin');
     }
-  } catch (err) {
-    console.error(err);
-    await db.sql(`abort`);
+
+    let result: T = await callback(db);
+
+    if (transaction) {
+      await db.sql('commit');
+    }
+
+    return result;
+  } catch(err) {
+    if (transaction) {
+      await db.sql('abort');
+    }
+    throw err;
   } finally {
-    console.error('finished');
-    await db.sql(`commit`);
     db.end();
   }
 }
 
-export async function migrateDown() {
-  let db = await DbConnection.create();
-  await db.sql(`begin`);
+export async function migrateUp(opts: IMigrateOpts = {}): Promise<Job> {
+  let job = new Job({
+    progress: 'Migrating',
+    title: 'Migrate Up',
+  });
+
+  let migrations: Migration[];
 
   try {
-    await ensureMigrationSchemaExists(db);
-    let migrations = await getLastBatchCompletedMigrations(db);
+    await withDb<void>(!opts.noTransaction, async function(db: DbConnection) {
+      let allMigrations = await getAllMigrations(db);
+      let nextBatchNumber = await getNextBatch(db);
+      migrations = allMigrations.filter(m => m.upDownState == UpDownState.Down && m.hasApi());
 
-    for (let idx = migrations.length - 1; idx >= 0; idx--) {
-      let migration = migrations[idx];
-      migration.down(db);
-      await db.sql(`delete from elements.migrations where name = $1`, [migration.name]);
-    }
-  } catch (err) {
-    console.error(err);
-    await db.sql(`abort`);
-  } finally {
-    console.error('finished');
-    await db.sql(`commit`);
-    db.end();
-  }
-}
+      for (let idx = 0; idx < migrations.length; idx++) {
+        let migration = migrations[idx];
+        job.progress(`Migrating Up: ${migration.description}`);
 
-async function getPendingMigrations(db: DbConnection): Promise<Migration[]> {
-  let migrations: Migration[] = [];
-  let diskMigrations = await getDiskMigrations();
-  let dbMigrations = await getDbMigrations(db);
-  let dbMigrationSet = new Set(dbMigrations.map(m => m.name));
-  return diskMigrations.filter(m => !dbMigrationSet.has(m.name));
-}
-
-async function getLastBatchCompletedMigrations(db: DbConnection): Promise<Migration[]> {
-  let migrations: Migration[] = [];
-  let diskMigrations = await getDiskMigrations();
-  let diskMigrationMap = new Map(diskMigrations.map(m => [m.name, m]));
-  let dbMigrations = await getDbMigrations(db);
-  let batch = dbMigrations.length > 0 ? dbMigrations[dbMigrations.length - 1].batch : 0;
-
-  if (dbMigrations.length > 0) {
-    let idx = dbMigrations.length - 1;
-    let batch = dbMigrations[idx].batch;
-
-    while (idx >= 0) {
-      let migration = dbMigrations[idx--];
-      if (migration.batch == batch) {
-        let diskMigration = diskMigrationMap.get(migration.name);
-        if (diskMigration) {
-          migrations.push(diskMigration);
+        try {
+          // run the migration up
+          await migration.up(db);
+        } catch (err) {
+          migration.runState = RunState.Error;
+          throw new MigrationError(migration, err.toString());
         }
-      } else {
-        break;
+
+        // insert the migration db row
+        let insertMigrationResult = await db.sql(`
+          insert into elements.migrations (
+            name,
+            description,
+            batch,
+            created_at
+          ) values ($1, $2, $3, $4)
+          returning *
+        `, [
+          migration.name,
+          migration.description,
+          nextBatchNumber,
+          migration.createdAt,
+        ]);
+
+        migration.runAt = getDateString(insertMigrationResult.first().runAt);
+        migration.upDownState = UpDownState.Up;
+        migration.runState = RunState.Completed;
       }
-    }
+    });
+  } catch (err) {
+    job.addError(err);
+  } finally {
+    job.summary(getJobSummary('up', migrations, job, opts));
   }
 
-  return migrations;
+  return job.finish();
 }
 
-async function getDiskMigrations(): Promise<Migration[]> {
-  let migrations: Migration[] = [];
+export async function migrateDown(opts: IMigrateOpts = {}): Promise<Job> {
+  let job = new Job({
+    progress: 'Migrating',
+    title: 'Migrate Down',
+  });
+
+  let migrations: Migration[];
+
+  try {
+    await withDb<void>(!opts.noTransaction, async function(db: DbConnection) {
+      let allMigrations = await getAllMigrations(db);
+      let lastBatch = await getLastBatch(db);
+      migrations = allMigrations.filter(m => m.upDownState == UpDownState.Up && m.batch == lastBatch && m.hasApi());
+
+      for (let idx = migrations.length - 1; idx >= 0; idx--) {
+        let migration = migrations[idx];
+        job.progress(`Migrating Down: ${migration.description}`);
+
+        try {
+          // run the migration down
+          await migration.down(db);
+        } catch (err) {
+          migration.runState = RunState.Error;
+          throw new MigrationError(migration, err.toString());
+        }
+
+        // delete the migration row
+        await db.sql('delete from elements.migrations where name = $1;', [migration.name]);
+
+        // set the migration state
+        migration.upDownState = UpDownState.Down;
+        migration.runState = RunState.Completed;
+        migration.runAt = '';
+      }
+    });
+  } catch (err) {
+    job.addError(err);
+  } finally {
+    job.summary(getJobSummary('down', migrations, job, opts));
+  }
+
+  return job.finish();
+}
+
+export async function migrateStatus(opts: IMigrateStatusOpts = {}): Promise<Job> {
+  let job = new Job({
+    progress: 'Computing Status',
+    title: 'Migration Status',
+  });
+
+  return withDb<Job>(false, async function(db: DbConnection) {
+    let allMigrations = await getAllMigrations(db);
+    let migrations: Migration[];
+
+    if (opts.up) {
+      migrations = allMigrations.filter(m => m.upDownState == UpDownState.Up);
+    } else if (opts.down) {
+      migrations = allMigrations.filter(m => m.upDownState == UpDownState.Down);
+    } else {
+      migrations = allMigrations;
+    }
+
+    job.summary(getUpDownStateTable(migrations));
+    return job.finish();
+  });
+}
+
+/**
+ * Returns a sorted array of migrations from disk and the database.
+ */
+async function getAllMigrations(db: DbConnection): Promise<Migration[]> {
+  let allMigrations: Migration[] = [];
+  let diskMigrations = await getDiskMigrations();
+  let dbMigrations = await getDbMigrations(db);
+
+  // add all the disk migrations
+  diskMigrations.forEach((diskMigration, name) => allMigrations.push(diskMigration));
+
+  // add any missing db migrations and set the completed state of disk
+  // migrations that are in the db.
+  dbMigrations.forEach((dbMigration, name) => {
+    if (diskMigrations.has(name)) {
+      // already have the migration from disk? use that one since it will have
+      // the up/down apis attached to it. copy over the db migration attributes.
+      let diskMigration = diskMigrations.get(name);
+      diskMigration.upDownState = UpDownState.Up;
+      diskMigration.createdAt = dbMigration.createdAt;
+      diskMigration.runAt = dbMigration.runAt;
+      diskMigration.batch = dbMigration.batch;
+    } else {
+      // don't have the migration on disk? add the db migration to the list so
+      // we can still see its status (but we won't be able to call the up/down
+      // api methods since we don't have those in the db version).
+      allMigrations.push(dbMigration);
+    }
+  });
+
+  // return the migrations sorted in ascending order by name which should
+  // lexographically be sorted by created at date.
+  return allMigrations.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+async function getDiskMigrations(): Promise<Map<string, Migration>> {
+  let migrations = new Map();
   let migrationsPath = getMigrationsPath();
   fs.readdirSync(migrationsPath).forEach(fileName => {
     let match = reMigrationFileName.exec(fileName);
     if (match) {
-      let migration = require(path.join(migrationsPath, fileName)).default;
-      migration.name = match[1];
-      migrations.push(migration);
+      let migration: Migration = require(path.join(migrationsPath, fileName)).default;
+      migration.name = path.basename(match[0], '.js');
+      migration.createdAt = match[1];
+      migrations.set(migration.name, migration);
     }
   });
-  return migrations.sort((m1, m2) => m1.name.localeCompare(m2.name));
+  return migrations;
 }
 
-async function getDbMigrations(db: DbConnection): Promise<Migration[]> {
-  let migrations: Migration[] = [];
-  let result = await db.sql(`select name, description, batch from elements.migrations`);
+async function getDbMigrations(db: DbConnection): Promise<Map<string, Migration>> {
+  let migrations = new Map();
+  let result = await db.sql(`select name, description, batch, created_at::timestamp::date, run_at::timestamp::date from elements.migrations`);
   result.forEach(row => {
     let migration = new Migration(row.description);
-    migration.state = MigrationState.Completed;
+    migration.upDownState = UpDownState.Up;
     migration.name = row.name;
     migration.batch = row.batch;
-    migrations.push(migration);
+    migration.createdAt = getDateString(row.createdAt);
+    migration.runAt = getDateString(row.runAt);
+    migrations.set(migration.name, migration);
   });
-  return migrations.sort((m1, m2) => m1.name.localeCompare(m2.name));
+  return migrations;
 }
 
-async function getNextBatchNumber(db: DbConnection): Promise<number> {
+async function getNextBatch(db: DbConnection): Promise<number> {
   let result = await db.sql(`select max(batch) as batch from elements.migrations limit 1`);
-  return result.size > 0 ? result.first().batch + 1 : 1;
+  let batch = result.first().batch;
+  return batch ? Number.parseInt(batch) + 1 : 1;
+}
+
+async function getLastBatch(db: DbConnection): Promise<number> {
+  let result = await db.sql(`select max(batch) as batch from elements.migrations limit 1`);
+  return result.size > 0 ? result.first().batch : -1;
 }
 
 async function ensureMigrationSchemaExists(db: DbConnection) {
@@ -163,6 +352,7 @@ async function ensureMigrationSchemaExists(db: DbConnection) {
       name text not null,
       description text not null,
       batch bigint,
+      run_at timestamp default current_timestamp,
       created_at timestamp default current_timestamp,
       updated_at timestamp default current_timestamp
     );
@@ -171,4 +361,88 @@ async function ensureMigrationSchemaExists(db: DbConnection) {
 
 function getMigrationsPath(): string {
   return path.join(process.cwd(), 'app', 'migrations');
+}
+
+function getJobSummary(direction: string, migrations: Migration[], job: Job, opts: IMigrateOpts): string {
+  let result: string;
+  if (migrations.length == 0) {
+    result = style('There are no migrations to run ' + direction + '.', FontColor.Gray) + '\n';
+    return result;
+  } else {
+    if (opts.noTransaction !== true && job.hasErrors()) {
+      // reset all completed migrations to pending state since they were rolled
+      // back.
+      migrations.forEach(m => m.runState == RunState.Completed ? m.runState = RunState.Pending : m.runState);
+    }
+
+    result = getRunStateTable(migrations) + '\n';
+    if (job.hasErrors()) {
+      let errMigration = job.getErrors()[0];
+      if (opts.noTransaction !== true) {
+        result += style('One of the migrations failed and all migrations in the transaction were rolled back.', FontColor.Gray) + '\n\n';
+      } else {
+        result += style('One of the migrations failed.', FontColor.Gray) + '\n\n';
+      }
+
+      result += errMigration.message + '\n';
+    } else {
+      result += style(`You ran ${migrations.length} ${pluralize(migrations.length, 'migration', 'migrations')} ${direction}.`, FontColor.Gray) + '\n';
+    }
+
+    return result;
+  }
+}
+
+function getUpDownStateTable(migrations: Migration[]): string {
+  let rows: string[][] = [];
+
+  if (migrations.length == 0) {
+    rows.push([style('No migrations.', FontColor.Gray)]);
+    return table(rows);
+  }
+
+  rows.push([
+    style('Migration', FontColor.Gray, FontStyle.Bold),
+    style('Created', FontColor.Gray, FontStyle.Bold),
+    style('Run', FontColor.Gray, FontStyle.Bold),
+    style('State', FontColor.Gray, FontStyle.Bold),
+  ]);
+
+  for (let idx = 0; idx < migrations.length; idx++) {
+    let migration = migrations[idx];
+    rows.push([
+      style(migration.description, FontColor.Gray, FontStyle.Dim),
+      style(migration.createdAt, FontColor.Blue, FontStyle.Dim),
+      style(migration.runAt, FontColor.Blue, FontStyle.Dim),
+      style(migration.upDownState, getColorForUpDownState(migration.upDownState), FontStyle.None),
+    ]);
+  }
+
+  return table(rows);
+}
+
+function getRunStateTable(migrations: Migration[]): string {
+  let rows: string[][] = [];
+
+  if (migrations.length == 0) {
+    rows.push([style('No migrations.', FontColor.Gray)]);
+    return table(rows);
+  }
+
+  rows.push([
+    style('Migration', FontColor.Gray, FontStyle.Bold),
+    style('Created', FontColor.Gray, FontStyle.Bold),
+    style('State', FontColor.Gray, FontStyle.Bold),
+  ]);
+
+  for (let idx = 0; idx < migrations.length; idx++) {
+    let migration = migrations[idx];
+    rows.push([
+      style(migration.description, FontColor.Default, FontStyle.Dim),
+      style(migration.createdAt, FontColor.Blue, FontStyle.Dim),
+      style(migration.runState, getColorForRunState(migration.runState), FontStyle.None),
+    ]);
+  }
+
+  return table(rows);
 }
