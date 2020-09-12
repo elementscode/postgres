@@ -149,10 +149,8 @@ export async function migrateUp(opts: IMigrateOpts = {}): Promise<Job> {
 
   let job = new Job({
     progress: 'Migrating',
-    title: 'Migrate Up',
     stream: stream,
   });
-  hideCursor(stream);
 
   let migrations: Migration[] = [];
   try {
@@ -204,7 +202,6 @@ export async function migrateUp(opts: IMigrateOpts = {}): Promise<Job> {
     }
   }
 
-  showCursor(stream);
   return job.finish();
 }
 
@@ -213,10 +210,8 @@ export async function migrateDown(opts: IMigrateOpts = {}): Promise<Job> {
 
   let job = new Job({
     progress: 'Migrating',
-    title: 'Migrate Down',
     stream: stream,
   });
-  hideCursor(stream);
 
   let migrations: Migration[] = [];
 
@@ -257,7 +252,6 @@ export async function migrateDown(opts: IMigrateOpts = {}): Promise<Job> {
     }
   }
 
-  showCursor(stream);
   return job.finish();
 }
 
@@ -266,10 +260,8 @@ export async function migrateStatus(opts: IMigrateStatusOpts = {}): Promise<Job>
 
   let job = new Job({
     progress: 'Computing Status',
-    title: 'Migration Status',
     stream: stream,
   });
-  hideCursor(stream);
 
   try {
     await withDb<void>(false, async function(db: DbConnection) {
@@ -291,7 +283,6 @@ export async function migrateStatus(opts: IMigrateStatusOpts = {}): Promise<Job>
     job.summary(getErrSummary(err));
   }
 
-  showCursor(stream);
   return job.finish();
 }
 
