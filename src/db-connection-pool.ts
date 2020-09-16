@@ -25,10 +25,9 @@ export class DbConnectionPool {
 
   public constructor(config: DbConfig = findOrCreateAppConfig().get<DbConfig>('db', {})) {
     this._state = DbConnectionPoolState.Idle;
-    this.connect(config);
   }
 
-  public async connect(config: DbConfig) {
+  public async connect(config: DbConfig = findOrCreateAppConfig().get<DbConfig>('db', {})) {
     this._state = DbConnectionPoolState.Connecting;
     this._pool = new pg.Pool(config);
 
