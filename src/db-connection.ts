@@ -1,8 +1,10 @@
 import * as pg from 'pg';
-import { camelCase } from '@elements/utils';
+import { style, FontColor } from '@elements/term';
+import { camelCase, indent } from '@elements/utils';
 import { findOrCreateAppConfig } from '@elements/config';
 import { SqlResult } from './sql-result';
 import { DbConfig } from './types';
+import { SqlError } from './errors';
 
 function camelCaseColNames<T = any>(rows: T[]): T[] {
   let result = [];
@@ -40,8 +42,30 @@ export class DbConnection {
   }
 
   public async sql<R extends any = any, A extends any[] = any[]>(text: string, args?: A): Promise<SqlResult<R>> {
-    let result = await this._client.query<R, A>(text, args);
-    return new SqlResult<R>(camelCaseColNames<R>(result.rows));
+    try {
+      let result = await this._client.query<R, A>(text, args);
+      return new SqlResult<R>(camelCaseColNames<R>(result.rows));
+    } catch (err) {
+      throw this.createSqlError(err, text);
+    }
+  }
+
+  protected createSqlError(err: any, text: string): SqlError {
+    let msg: string;
+
+    if (err.position) {
+      let idx = err.position - 1;
+      let before = text.slice(0, idx);
+      let match = text.slice(idx, idx + 1);
+      let after = text.slice(idx + 1, text.length);
+      let syntax = style(before, FontColor.Gray) + style(match, FontColor.Red) + style(after, FontColor.Gray);
+      msg = '\n\n' + indent(syntax, 2) + '\n\n';
+      msg += indent(err.message, 2) + '\n\n';
+    } else {
+      msg = '\n\n' + indent(err.message, 2) + '\n\n';
+    }
+
+    return new SqlError(msg);
   }
 
   public async end(): Promise<void> {
