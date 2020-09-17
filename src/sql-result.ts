@@ -36,7 +36,7 @@ export class SqlResult<T = any> {
    * Returns the first record in the result set and throws a NotAuthorized error
    * if the record does not exist.
    */
-  public firstOrThrowNotAuthorized(msg: string = ''): T {
+  public firstOrThrowNotAuthorizedError(msg: string = ''): T {
     return this.firstOrThrow(NotAuthorizedError, msg);
   }
 
@@ -44,7 +44,7 @@ export class SqlResult<T = any> {
    * Returns the first record in the result set and throws a NotFoundError if
    * the record does not exist.
    */
-  public firstOrThrowNotFound(msg: string = ''): T {
+  public firstOrThrowNotFoundError(msg: string = ''): T {
     return this.firstOrThrow(NotFoundError, msg);
   }
 
@@ -52,7 +52,7 @@ export class SqlResult<T = any> {
    * Returns the first record in the result set and throws the specified error
    * if the first row does not exist.
    */
-  public firstOrThrow(errorClass: ErrorConstructor = Error, msg: string = 'Not found.'): T {
+  public firstOrThrowError(errorClass: ErrorConstructor = Error, msg: string = 'Not found.'): T {
     let result = this.first();
     if (typeof result === 'undefined') {
       let err = new errorClass(msg);
