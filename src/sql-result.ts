@@ -37,7 +37,7 @@ export class SqlResult<T = any> {
    * if the record does not exist.
    */
   public firstOrThrowNotAuthorizedError(msg: string = ''): T {
-    return this.firstOrThrow(NotAuthorizedError, msg);
+    return this.firstOrThrowError(NotAuthorizedError, msg);
   }
 
   /**
@@ -45,7 +45,7 @@ export class SqlResult<T = any> {
    * the record does not exist.
    */
   public firstOrThrowNotFoundError(msg: string = ''): T {
-    return this.firstOrThrow(NotFoundError, msg);
+    return this.firstOrThrowError(NotFoundError, msg);
   }
 
   /**

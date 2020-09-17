@@ -42,6 +42,14 @@ export class DbConnectionPool {
   }
 
   public async checkout(): Promise<DbConnection> {
+    if (this._state == DbConnectionPoolState.Idle) {
+      await this.connect();
+    }
+
+    if (this._state != DbConnectionPoolState.Connected) {
+      throw new Error(`Not connected to the database so unable to checkout a connection.`);
+    }
+
     let client = await this._pool.connect();
     return new DbConnection(client);
   }
