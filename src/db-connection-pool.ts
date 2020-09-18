@@ -30,24 +30,12 @@ export class DbConnectionPool {
   public async connect(config: DbConfig = findOrCreateAppConfig().get<DbConfig>('db', {})) {
     this._state = DbConnectionPoolState.Connecting;
     this._pool = new pg.Pool(config);
-
-    try {
-      let db = await this.checkout();
-      db.checkin();
-      this._state = DbConnectionPoolState.Connected;
-    } catch (err) {
-      this._state = DbConnectionPoolState.Error;
-      throw new Error(`Error connecting to the postgres database: ${err.message}`);
-    }
+    this._state = DbConnectionPoolState.Connected;
   }
 
   public async checkout(): Promise<DbConnection> {
     if (this._state == DbConnectionPoolState.Idle) {
       await this.connect();
-    }
-
-    if (this._state != DbConnectionPoolState.Connected) {
-      throw new Error(`Not connected to the database so unable to checkout a connection.`);
     }
 
     let client = await this._pool.connect();
