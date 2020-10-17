@@ -8,7 +8,8 @@
     "./db-connection-pool": false,
     "./db-connection": false,
     "./db": false,
-    "./types": false
+    "./types": false,
+    "./migrate": false
   },
   "bin": {
     "migrate": "bin/migrate.js"
