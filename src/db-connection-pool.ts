@@ -3,7 +3,6 @@ import * as pg from 'pg';
 import { findOrCreateAppConfig } from '@elements/config';
 import { DbConfig } from './types';
 import { DbConnection } from './db-connection';
-import { SqlResult } from './sql-result';
 
 export enum DbConnectionPoolState {
   Idle='Idle',
@@ -45,18 +44,5 @@ export class DbConnectionPool {
   public async end(): Promise<this> {
     await this._pool.end();
     return this;
-  }
-
-  /**
-   * Checkout a database connection and call the sql method on it, automatically
-   * closing the connection when this method returns.
-   */
-  public async sql<R extends any = any, A extends any[] = any[]>(text: string, args?: A): Promise<SqlResult<R>> {
-    let db = await this.checkout();
-    try {
-      return db.sql<R,A>(text, args);
-    } finally {
-      db.checkin();
-    }
   }
 }
