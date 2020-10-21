@@ -7,7 +7,7 @@
     "./connect": false,
     "./db-connection-pool": false,
     "./db-connection": false,
-    "./db": false,
+    "./db-pool": false,
     "./types": false,
     "./migrate": false
   },
