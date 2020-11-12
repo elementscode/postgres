@@ -22,7 +22,7 @@ export class DbConnectionPool {
 
   private _state: DbConnectionPoolState;
 
-  public constructor(config: DbConfig = findOrCreateAppConfig().get<DbConfig>('db', {})) {
+  public constructor() {
     this._state = DbConnectionPoolState.Idle;
   }
 

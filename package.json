@@ -4,12 +4,12 @@
   "version": "0.0.0",
   "license": "SEE LICENSE IN LICENSE.txt",
   "browser": {
-    "./connect": false,
     "./db-connection-pool": false,
     "./db-connection": false,
     "./db-pool": false,
+    "./migrate": false,
     "./types": false,
-    "./migrate": false
+    "./sql": false
   },
   "bin": {
     "migrate": "bin/migrate.js"

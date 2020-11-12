@@ -324,16 +324,26 @@ async function getAllMigrations(db: DbConnection): Promise<Migration[]> {
 async function getDiskMigrations(): Promise<Map<string, Migration>> {
   let migrations = new Map();
   let migrationsPath = getMigrationsPath();
-  fs.readdirSync(migrationsPath).forEach(fileName => {
-    let match = reMigrationFileName.exec(fileName);
-    if (match) {
-      let migration: Migration = require(path.join(migrationsPath, fileName)).default;
-      migration.name = path.basename(match[0], '.js');
-      migration.createdAt = match[1];
-      migrations.set(migration.name, migration);
+
+  try {
+    fs.readdirSync(migrationsPath).forEach(fileName => {
+      let match = reMigrationFileName.exec(fileName);
+      if (match) {
+        let migration: Migration = require(path.join(migrationsPath, fileName)).default;
+        migration.name = path.basename(match[0], '.js');
+        migration.createdAt = match[1];
+        migrations.set(migration.name, migration);
+      }
+    });
+    return migrations;
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      // no migrations folder
+      return migrations;
+    } else {
+      throw err;
     }
-  });
-  return migrations;
+  }
 }
 
 async function getDbMigrations(db: DbConnection): Promise<Map<string, Migration>> {
