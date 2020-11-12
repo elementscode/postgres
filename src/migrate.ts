@@ -148,7 +148,7 @@ export async function migrateUp(opts: IMigrateOpts = {}): Promise<Job> {
   let stream = process.stderr;
 
   let job = new Job({
-    progress: 'Migrating',
+    spinner: false,
     stream: stream,
   });
 
@@ -259,7 +259,7 @@ export async function migrateStatus(opts: IMigrateStatusOpts = {}): Promise<Job>
   let stream = process.stderr;
 
   let job = new Job({
-    progress: 'Computing Status',
+    spinner: false,
     stream: stream,
   });
 
