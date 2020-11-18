@@ -69,6 +69,14 @@ export class SqlResult<T = any> {
   }
 
   /**
+   * Slice the rows at a given index.
+   *
+   */
+  public slice(index?: number): T[] {
+    return this.rows.slice(index);
+  }
+
+  /**
    * Map over the rows to return a new SqlResult containing the mapped values.
    *
    */
