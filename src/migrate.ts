@@ -42,6 +42,7 @@ export interface IMigrateStatusOpts {
 }
 
 export interface IMigrationApi {
+  description: string;
   up(db: DbConnection): void;
   down(db: DbConnection): void;
 }
@@ -91,9 +92,9 @@ export class Migration {
   batch: number;
   api: IMigrationApi;
 
-  public constructor(description: string, api?: IMigrationApi) {
+  public constructor(api: IMigrationApi) {
     this.name = '';
-    this.description = description;
+    this.description = api.description;
     this.upDownState = UpDownState.Down;
     this.runState = RunState.Pending;
     this.api = api;
@@ -113,8 +114,8 @@ export class Migration {
     return !!this.api;
   }
 
-  public static create(desc: string, api: IMigrationApi): Migration {
-    return new Migration(desc, api);
+  public static create(api: IMigrationApi): Migration {
+    return new Migration(api);
   }
 }
 
