@@ -22,7 +22,12 @@ import { DbConnection } from './db-connection';
 // portion, so we can easily extract the 'created' field of the migration. The
 // 'name' field of the migration will be the basename without the file
 // extension.
-const reMigrationFileName = /(\d{4}-\d{2}-\d{2})-\d{9}\.js$/
+//const reMigrationFileName = /(\d{4}-\d{2}-\d{2})-\d{9}\.js$/
+// NOTE: you changed this because you're moving the 'create' command to
+// elements/create package and js has different timestamp formats. so use 5
+// digits instead of 9 going forward. But change this back if you end up going
+// back to the old one!
+const reMigrationFileName = /(\d{4}-\d{2}-\d{2})-\d{5}\.js$/
 
 export class MigrationError extends StandardError {
   migration: Migration;

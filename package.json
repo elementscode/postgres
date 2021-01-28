@@ -1,8 +1,8 @@
 {
   "name": "@elements/postgres",
-  "description": "Work easily with the postgres sql database.",
-  "version": "0.0.0",
-  "license": "SEE LICENSE IN LICENSE.txt",
+  "description": "Work with strongly typed postgres sql queries.",
+  "version": "1.0.0-beta.1",
+  "license": "MIT",
   "browser": {
     "./db-connection-pool": false,
     "./db-connection": false,
@@ -16,11 +16,11 @@
   },
   "engines": {},
   "dependencies": {
-    "@elements/config": "0.0.0",
-    "@elements/error": "0.0.0",
-    "@elements/job": "0.0.0",
-    "@elements/json": "0.0.0",
-    "@elements/term": "0.0.0",
+    "@elements/config": "1.0.0-beta.1",
+    "@elements/error": "1.0.0-beta.1",
+    "@elements/job": "1.0.0-beta.1",
+    "@elements/json": "1.0.0-beta.1",
+    "@elements/term": "1.0.0-beta.1",
     "pg": ">=8.3.0 <8.4.0"
   },
   "devDependencies": {
