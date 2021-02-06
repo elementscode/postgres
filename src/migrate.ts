@@ -7,6 +7,7 @@ import {
   FontStyle,
   showCursor,
   hideCursor,
+  getStyledText,
 } from '@elements/term';
 import {
   padZeros,
@@ -215,7 +216,7 @@ export async function migrateDown(opts: IMigrateOpts = {}): Promise<Job> {
   let stream = process.stderr;
 
   let job = new Job({
-    progress: 'Migrating',
+    progressText: 'Migrating',
     stream: stream,
   });
 
@@ -401,7 +402,7 @@ function getMigrationsPath(): string {
 function getJobSummary(direction: string, migrations: Migration[], job: Job, opts: IMigrateOpts): string {
   let result: string;
   if (migrations.length == 0) {
-    result = style('There are no migrations to run ' + direction + '.', FontColor.Gray) + '\n';
+    result = style.subtle('There are no migrations to run ' + direction + '.') + '\n';
     return result;
   } else {
     if (opts.noTransaction !== true && job.hasErrors()) {
@@ -414,14 +415,14 @@ function getJobSummary(direction: string, migrations: Migration[], job: Job, opt
     if (job.hasErrors()) {
       let errMigration = job.getErrors()[0];
       if (opts.noTransaction) {
-        result += style(`This migration failed:\n${errMigration.migration.name} ${errMigration.migration.description}.`, FontColor.Gray) + '\n\n';
+        result += style.subtle(`This migration failed:\n${errMigration.migration.name} ${errMigration.migration.description}.`) + '\n\n';
       } else {
-        result += style(`All migrations in the transaction were rolled back.\n\nThis migration failed:\n${errMigration.migration.name} ${errMigration.migration.description}.`, FontColor.Gray) + '\n\n';
+        result += style.subtle(`All migrations in the transaction were rolled back.\n\nThis migration failed:\n${errMigration.migration.name} ${errMigration.migration.description}.`) + '\n\n';
       }
 
       result += errMigration.message + '\n';
     } else {
-      result += style(`You ran ${migrations.length} ${pluralize(migrations.length, 'migration', 'migrations')} ${direction}.`, FontColor.Gray) + '\n';
+      result += style.subtle(`You ran ${migrations.length} ${pluralize(migrations.length, 'migration', 'migrations')} ${direction}.`) + '\n';
     }
 
     return result;
@@ -432,24 +433,24 @@ function getUpDownStateTable(migrations: Migration[]): string {
   let rows: string[][] = [];
 
   if (migrations.length == 0) {
-    rows.push([style('No migrations.', FontColor.Gray)]);
+    rows.push([style.subtle('No migrations.')]);
     return table(rows);
   }
 
   rows.push([
-    style('Migration', FontColor.Gray, FontStyle.Bold),
-    style('Created', FontColor.Gray, FontStyle.Bold),
-    style('Run', FontColor.Gray, FontStyle.Bold),
-    style('State', FontColor.Gray, FontStyle.Bold),
+    style.bsubtle('Migration'),
+    style.bsubtle('Created'),
+    style.bsubtle('Run'),
+    style.bsubtle('State'),
   ]);
 
   for (let idx = 0; idx < migrations.length; idx++) {
     let migration = migrations[idx];
     rows.push([
-      style(migration.description, FontColor.Gray, FontStyle.Dim),
-      style(migration.createdAt, FontColor.Blue, FontStyle.Dim),
-      style(migration.runAt, FontColor.Blue, FontStyle.Dim),
-      style(migration.upDownState, getColorForUpDownState(migration.upDownState), FontStyle.None),
+      style.subtle(migration.description),
+      style.subtle(migration.createdAt),
+      style.subtle(migration.runAt),
+      getStyledText(migration.upDownState, getColorForUpDownState(migration.upDownState)),
     ]);
   }
 
@@ -460,22 +461,22 @@ function getRunStateTable(migrations: Migration[]): string {
   let rows: string[][] = [];
 
   if (migrations.length == 0) {
-    rows.push([style('No migrations.', FontColor.Gray)]);
+    rows.push([style.subtle('No migrations.')]);
     return table(rows);
   }
 
   rows.push([
-    style('Migration', FontColor.Gray, FontStyle.Bold),
-    style('Created', FontColor.Gray, FontStyle.Bold),
-    style('State', FontColor.Gray, FontStyle.Bold),
+    style.bsubtle('Migration'),
+    style.bsubtle('Created'),
+    style.bsubtle('State'),
   ]);
 
   for (let idx = 0; idx < migrations.length; idx++) {
     let migration = migrations[idx];
     rows.push([
-      style(migration.description, FontColor.Default, FontStyle.Dim),
-      style(migration.createdAt, FontColor.Blue, FontStyle.Dim),
-      style(migration.runState, getColorForRunState(migration.runState), FontStyle.None),
+      style.subtle(migration.description),
+      style.subtle(migration.createdAt),
+      getStyledText(migration.runState, getColorForRunState(migration.runState), FontStyle.None),
     ]);
   }
 

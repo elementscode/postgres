@@ -58,7 +58,7 @@ export class DbConnection {
       let before = text.slice(0, idx);
       let match = text.slice(idx, idx + 1);
       let after = text.slice(idx + 1, text.length);
-      let syntax = style(before, FontColor.Gray) + style(match, FontColor.Red) + style(after, FontColor.Gray);
+      let syntax = style.subtle(before) + style.error(match) + style.subtle(after);
       msg = '\n\n' + indent(syntax, 2) + '\n\n';
       msg += indent(err.message, 2) + '\n\n';
     } else {

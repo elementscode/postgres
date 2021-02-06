@@ -1,7 +1,7 @@
 {
   "name": "@elements/postgres",
   "description": "Work with strongly typed postgres sql queries.",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-alpha.105",
   "license": "MIT",
   "browser": {
     "./db-connection-pool": false,
@@ -16,11 +16,11 @@
   },
   "engines": {},
   "dependencies": {
-    "@elements/config": "1.0.0-beta.1",
-    "@elements/error": "1.0.0-beta.1",
-    "@elements/job": "1.0.0-beta.1",
-    "@elements/json": "1.0.0-beta.1",
-    "@elements/term": "1.0.0-beta.1",
+    "@elements/config": "1.0.0-alpha.105",
+    "@elements/error": "1.0.0-alpha.105",
+    "@elements/job": "1.0.0-alpha.105",
+    "@elements/json": "1.0.0-alpha.105",
+    "@elements/term": "1.0.0-alpha.105",
     "pg": ">=8.3.0 <8.4.0"
   },
   "devDependencies": {
@@ -28,7 +28,7 @@
   },
   "scripts": {
     "clean": "rm -rf .elements/dist",
-    "copyfiles": "mkdir -p .elements/dist && cp README.md LICENSE.txt package.json .elements/dist",
+    "copyfiles": "mkdir -p .elements/dist && cp README.md package.json .elements/dist",
     "build": "yarn run clean && yarn run copyfiles && tsc",
     "build:watch": "yarn run clean && yarn run copyfiles && tsc --watch"
   }
