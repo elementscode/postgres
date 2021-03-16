@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "target": "ES5",
     "inlineSources": true,
     "noEmitOnError": true,
     "allowJs": false,
@@ -12,7 +13,6 @@
     "preserveConstEnums": true,
     "resolveJsonModule": true,
     "sourceMap": true,
-    "target": "es5",
     "downlevelIteration": true
   },
   "include": [
