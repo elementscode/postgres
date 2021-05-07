@@ -1,7 +1,7 @@
 {
   "name": "@elements/postgres",
   "description": "Work with strongly typed postgres sql queries.",
-  "version": "1.0.0-alpha.109",
+  "version": "1.0.0-alpha.110",
   "license": "MIT",
   "browser": {
     "./db-connection-pool": false,
@@ -16,11 +16,11 @@
   },
   "engines": {},
   "dependencies": {
-    "@elements/config": "1.0.0-alpha.109",
-    "@elements/error": "1.0.0-alpha.109",
-    "@elements/job": "1.0.0-alpha.109",
-    "@elements/json": "1.0.0-alpha.109",
-    "@elements/term": "1.0.0-alpha.109",
+    "@elements/config": "1.0.0-alpha.110",
+    "@elements/error": "1.0.0-alpha.110",
+    "@elements/job": "1.0.0-alpha.110",
+    "@elements/json": "1.0.0-alpha.110",
+    "@elements/term": "1.0.0-alpha.110",
     "pg": ">=8.3.0 <8.4.0"
   },
   "devDependencies": {
