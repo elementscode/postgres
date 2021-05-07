@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "target": "ES5",
-    "inlineSources": true,
     "noEmitOnError": true,
     "allowJs": false,
     "declaration": true,
@@ -12,7 +11,8 @@
     "outDir": ".elements/dist",
     "preserveConstEnums": true,
     "resolveJsonModule": true,
-    "sourceMap": true,
+    "sourceMap": false,
+    "inlineSources": false,
     "downlevelIteration": true
   },
   "include": [
